@@ -1,0 +1,54 @@
+import numpy as np 
+import pandas as pd 
+
+import osfor dirname, _, filenames in os.walk('/kaggle/input'):
+    for filename in filenames:
+        print(os.path.join(dirname, filename))
+
+!pip install pyspark
+
+from pyspark.sql import SparkSession
+spark = SparkSession \
+    .builder \
+    .appName("Time series data analysis with Spark") \
+    .getOrCreate()
+
+df=spark.read_csv('EI_DJTA_20160128_Trades.csv',inference=’true’,header=”true”)
+df.shape
+df.head
+df.describe()
+df.info()
+df.printSchema() 
+df.show() 
+df.count()
+df.summary().show()
+
+
+df.groupBy("Ticker").count().show()
+
+
+df.groupBy('Ticker').agg({"Price": "avg", "Quantity": "sum"} ).show()
+PandasDF = df.toPandas()
+
+
+from sklearn.preprocessing import StandardScaler
+import plotly.graph_objs as go
+
+from plotly import __version__
+from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
+
+init_notebook_mode(connected=True)
+data=[
+    go.Scatter(x=PandasDF.Timestamp, y=PandasDF.Price[PandasDF.Ticker=='R'], name='Price')
+]
+iplot({'data':data, 'layout':{'title':'Equity R price trace on 2016-01-28', 'font': dict(size=10)}})
+
+
+
+import numpy as np
+from plotly.graph_objs import *
+uni_Index=np.unique(PandasDF.Ticker, return_counts=True)
+data = [Bar(x=uni_Index[0], y=uni_Index[1])]
+layout = Layout(title="Equity Indexes: DJ Transport",yaxis=dict(title='Counts'))
+fig = Figure(data=data, layout=layout)
+iplot(fig)
